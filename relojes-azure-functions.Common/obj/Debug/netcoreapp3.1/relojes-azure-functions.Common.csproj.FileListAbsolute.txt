@@ -1,0 +1,10 @@
+D:\ITM\Programación Distribuida\relojes-azure-functions\relojes-azure-functions.Common\bin\Debug\netcoreapp3.1\relojes-azure-functions.Common.deps.json
+D:\ITM\Programación Distribuida\relojes-azure-functions\relojes-azure-functions.Common\bin\Debug\netcoreapp3.1\relojes-azure-functions.Common.dll
+D:\ITM\Programación Distribuida\relojes-azure-functions\relojes-azure-functions.Common\bin\Debug\netcoreapp3.1\relojes-azure-functions.Common.pdb
+D:\ITM\Programación Distribuida\relojes-azure-functions\relojes-azure-functions.Common\obj\Debug\netcoreapp3.1\relojes-azure-functions.Common.csproj.AssemblyReference.cache
+D:\ITM\Programación Distribuida\relojes-azure-functions\relojes-azure-functions.Common\obj\Debug\netcoreapp3.1\relojes-azure-functions.Common.GeneratedMSBuildEditorConfig.editorconfig
+D:\ITM\Programación Distribuida\relojes-azure-functions\relojes-azure-functions.Common\obj\Debug\netcoreapp3.1\relojes-azure-functions.Common.AssemblyInfoInputs.cache
+D:\ITM\Programación Distribuida\relojes-azure-functions\relojes-azure-functions.Common\obj\Debug\netcoreapp3.1\relojes-azure-functions.Common.AssemblyInfo.cs
+D:\ITM\Programación Distribuida\relojes-azure-functions\relojes-azure-functions.Common\obj\Debug\netcoreapp3.1\relojes-azure-functions.Common.csproj.CoreCompileInputs.cache
+D:\ITM\Programación Distribuida\relojes-azure-functions\relojes-azure-functions.Common\obj\Debug\netcoreapp3.1\relojes-azure-functions.Common.dll
+D:\ITM\Programación Distribuida\relojes-azure-functions\relojes-azure-functions.Common\obj\Debug\netcoreapp3.1\relojes-azure-functions.Common.pdb
