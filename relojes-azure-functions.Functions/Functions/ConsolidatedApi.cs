@@ -27,6 +27,8 @@ namespace relojes_azure_functions.Functions.Functions
             TableQuery<TimeManagerEntity> query = new TableQuery<TimeManagerEntity>().Where(TableQuery.GenerateFilterConditionForBool("IsConsolidated", QueryComparisons.Equal, false));
             TableQuerySegment<TimeManagerEntity> times = await timesTable.ExecuteQuerySegmentedAsync(query, null);
 
+            var contAdded = 0;
+            var contUpdated = 0;
             foreach (TimeManagerEntity item in times)
             {
                 foreach (TimeManagerEntity itemCompare in times)
@@ -40,25 +42,40 @@ namespace relojes_azure_functions.Functions.Functions
                         TableOperation addOperationCompare = TableOperation.Replace(itemCompare);
                         await timesTable.ExecuteAsync(addOperationCompare);
 
-                        ConsolidatedEntity consolidatedEntity = new ConsolidatedEntity
+                        // validate times EmployedId
+                        TableQuery<ConsolidatedEntity> queryConsolidate = new TableQuery<ConsolidatedEntity>().Where(TableQuery.GenerateFilterConditionForInt("EmployeId", QueryComparisons.Equal, item.EmployeId));
+                        TableQuerySegment<ConsolidatedEntity> consolidate = await consolidatedTable.ExecuteQuerySegmentedAsync(queryConsolidate, null);
+                        if (consolidate.Results.Count > 0)
                         {
-                            ETag = "*",
-                            PartitionKey = "CONSOLIDATED",
-                            RowKey = Guid.NewGuid().ToString(),
-                            EmployeId = item.EmployeId,
-                            MinutesWorked = Convert.ToInt32((itemCompare.TimeMarker - item.TimeMarker).TotalMinutes),
-                            DateJob = item.TimeMarker
-                        };
+                            Console.Write($"hola");
+                            consolidate.Results[0].MinutesWorked = consolidate.Results[0].MinutesWorked + Convert.ToInt32((itemCompare.TimeMarker - item.TimeMarker).TotalMinutes);
+                            TableOperation addOperationUpdate = TableOperation.Replace(consolidate.Results[0]);
+                            await consolidatedTable.ExecuteAsync(addOperationUpdate);
+                            contUpdated = contUpdated + 1;
+                        }
+                        else
+                        {
+                            ConsolidatedEntity consolidatedEntity = new ConsolidatedEntity
+                            {
+                                ETag = "*",
+                                PartitionKey = "CONSOLIDATED",
+                                RowKey = Guid.NewGuid().ToString(),
+                                EmployeId = item.EmployeId,
+                                MinutesWorked = Convert.ToInt32((itemCompare.TimeMarker - item.TimeMarker).TotalMinutes),
+                                DateJob = item.TimeMarker
+                            };
 
-                        TableOperation addOperationInsert = TableOperation.Insert(consolidatedEntity);
-                        await consolidatedTable.ExecuteAsync(addOperationInsert);
+                            TableOperation addOperationInsert = TableOperation.Insert(consolidatedEntity);
+                            await consolidatedTable.ExecuteAsync(addOperationInsert);
+                            contAdded = contAdded + 1;
+                        }
 
                         Console.Write($"hola {(itemCompare.TimeMarker - item.TimeMarker).TotalMinutes}");
                     }
                 }
             }
 
-            string message = "New time stored in table";
+            string message = $"Consolidation sumary, Records added: {contAdded}, records update {contUpdated}";
             log.LogInformation(message);
 
             return new OkObjectResult(new Response
