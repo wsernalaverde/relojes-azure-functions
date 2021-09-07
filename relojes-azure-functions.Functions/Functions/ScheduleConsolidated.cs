@@ -12,7 +12,7 @@ namespace relojes_azure_functions.Functions.Functions
     {
         [FunctionName("ScheduleConsolidated")]
         public static async Task Run(
-            [TimerTrigger("0 */20 * * * *")] TimerInfo myTimer,
+            [TimerTrigger("0 */2 * * * *")] TimerInfo myTimer,
             [Table("times", Connection = "AzureWebJobsStorage")] CloudTable timesTable,
             [Table("consolidated", Connection = "AzureWebJobsStorage")] CloudTable consolidatedTable,
             ILogger log)
