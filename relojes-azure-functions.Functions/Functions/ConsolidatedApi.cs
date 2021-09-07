@@ -33,7 +33,7 @@ namespace relojes_azure_functions.Functions.Functions
             {
                 foreach (TimeManagerEntity itemCompare in times)
                 {
-                    if (item.EmployeId == itemCompare.EmployeId && item.Type == 0 && itemCompare.Type == 1)
+                    if (item.EmployeId == itemCompare.EmployeId && item.Type == 0 && itemCompare.Type == 1 && item.IsConsolidated == false && itemCompare.IsConsolidated == false)
                     {
                         item.IsConsolidated = true;
                         TableOperation addOperation = TableOperation.Replace(item);
@@ -47,7 +47,6 @@ namespace relojes_azure_functions.Functions.Functions
                         TableQuerySegment<ConsolidatedEntity> consolidate = await consolidatedTable.ExecuteQuerySegmentedAsync(queryConsolidate, null);
                         if (consolidate.Results.Count > 0)
                         {
-                            Console.Write($"hola");
                             consolidate.Results[0].MinutesWorked = consolidate.Results[0].MinutesWorked + Convert.ToInt32((itemCompare.TimeMarker - item.TimeMarker).TotalMinutes);
                             TableOperation addOperationUpdate = TableOperation.Replace(consolidate.Results[0]);
                             await consolidatedTable.ExecuteAsync(addOperationUpdate);
@@ -69,8 +68,7 @@ namespace relojes_azure_functions.Functions.Functions
                             await consolidatedTable.ExecuteAsync(addOperationInsert);
                             contAdded = contAdded + 1;
                         }
-
-                        Console.Write($"hola {(itemCompare.TimeMarker - item.TimeMarker).TotalMinutes}");
+                        break;
                     }
                 }
             }
