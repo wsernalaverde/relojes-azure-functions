@@ -1,28 +1,23 @@
 using System;
-using System.IO;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Microsoft.WindowsAzure.Storage.Table;
 using relojes_azure_functions.Functions.Entities;
-using relojes_azure_functions.Common.Responses;
 
 namespace relojes_azure_functions.Functions.Functions
 {
-    public static class ConsolidatedApi
+    public static class ScheduleConsolidated
     {
-        [FunctionName(nameof(ConsolidatedTimes))]
-        public static async Task<IActionResult> ConsolidatedTimes(
-           [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "consolidated")] HttpRequest req,
-           [Table("times", Connection = "AzureWebJobsStorage")] CloudTable timesTable,
-           [Table("consolidated", Connection = "AzureWebJobsStorage")] CloudTable consolidatedTable,
-           ILogger log)
+        [FunctionName("ScheduleConsolidated")]
+        public static async Task Run(
+            [TimerTrigger("0 */20 * * * *")] TimerInfo myTimer,
+            [Table("times", Connection = "AzureWebJobsStorage")] CloudTable timesTable,
+            [Table("consolidated", Connection = "AzureWebJobsStorage")] CloudTable consolidatedTable,
+            ILogger log)
         {
-            log.LogInformation("Recieved a new consolidated times process.");
+            log.LogInformation($"Consolidated task completed function executed at: {DateTime.Now}");
 
             TableQuery<TimeManagerEntity> query = new TableQuery<TimeManagerEntity>().Where(TableQuery.GenerateFilterConditionForBool("IsConsolidated", QueryComparisons.Equal, false));
             TableQuerySegment<TimeManagerEntity> times = await timesTable.ExecuteQuerySegmentedAsync(query, null);
@@ -50,17 +45,11 @@ namespace relojes_azure_functions.Functions.Functions
                             // foreach (ConsolidatedEntity itemConsolidate in consolidate.Results)
                             // {
                             // }
-                            
-                            int myIndex = consolidate.Results.FindIndex(p => {
-                                Console.Write($" ini:{p.DateJob.Day}");
-                                Console.Write($" ini:{item.TimeMarker.Day}");
-                                return p.DateJob.Day == item.TimeMarker.Day;
-                             });
-                            Console.Write($" ini: {myIndex}");
+                            int myIndex = consolidate.Results.FindIndex(p => p.DateJob.Day == item.TimeMarker.Day);
                             if (myIndex > -1)
                             {
-                                consolidate.Results[myIndex].MinutesWorked = consolidate.Results[myIndex].MinutesWorked + Convert.ToInt32((itemCompare.TimeMarker - item.TimeMarker).TotalMinutes);
-                                TableOperation addOperationUpdate = TableOperation.Replace(consolidate.Results[myIndex]);
+                                consolidate.Results[0].MinutesWorked = consolidate.Results[0].MinutesWorked + Convert.ToInt32((itemCompare.TimeMarker - item.TimeMarker).TotalMinutes);
+                                TableOperation addOperationUpdate = TableOperation.Replace(consolidate.Results[0]);
                                 await consolidatedTable.ExecuteAsync(addOperationUpdate);
                                 contUpdated = contUpdated + 1;
                             }
@@ -106,37 +95,8 @@ namespace relojes_azure_functions.Functions.Functions
                 }
             }
 
-            string message = $"Consolidation sumary, Records added: {contAdded}, records update {contUpdated}";
+            string message = $"Consolidation sumary, Records added: {contAdded}, records update {contUpdated}, at: {DateTime.Now}";
             log.LogInformation(message);
-
-            return new OkObjectResult(new Response
-            {
-                IsSuccess = true,
-                Message = message,
-                Result = times
-            });
-        }
-
-        [FunctionName(nameof(GetAllConsolidates))]
-        public static async Task<IActionResult> GetAllConsolidates(
-           [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "consolidated")] HttpRequest req,
-           [Table("consolidated", Connection = "AzureWebJobsStorage")] CloudTable consolidatedTable,
-           ILogger log)
-        {
-            log.LogInformation("Get all consolidate received");
-
-            TableQuery<ConsolidatedEntity> query = new TableQuery<ConsolidatedEntity>();
-            TableQuerySegment<ConsolidatedEntity> consolidate = await consolidatedTable.ExecuteQuerySegmentedAsync(query, null);
-
-            string message = "Retrieved all consolidated";
-            log.LogInformation(message);
-
-            return new OkObjectResult(new Response
-            {
-                IsSuccess = true,
-                Message = message,
-                Result = consolidate
-            });
         }
     }
 }
