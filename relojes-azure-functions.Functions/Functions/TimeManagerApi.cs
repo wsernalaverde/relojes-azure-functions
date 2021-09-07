@@ -37,6 +37,11 @@ namespace relojes_azure_functions.Functions.Functions
                 });
             }
 
+            if (time?.TimeMarker == DateTime.MinValue)
+            {
+                Console.Write($"no");
+            }
+
             TimeManagerEntity timeEntity = new TimeManagerEntity
             {
                 ETag = "*",
@@ -44,7 +49,7 @@ namespace relojes_azure_functions.Functions.Functions
                 PartitionKey = "TIMES",
                 RowKey = Guid.NewGuid().ToString(),
                 EmployeId = time.EmployeId,
-                TimeMarker = DateTime.UtcNow,
+                TimeMarker = time?.TimeMarker == DateTime.MinValue ? DateTime.UtcNow : time.TimeMarker,
                 Type = time.Type
             };
 

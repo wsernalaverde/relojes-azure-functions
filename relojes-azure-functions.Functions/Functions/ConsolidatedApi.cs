@@ -47,10 +47,34 @@ namespace relojes_azure_functions.Functions.Functions
                         TableQuerySegment<ConsolidatedEntity> consolidate = await consolidatedTable.ExecuteQuerySegmentedAsync(queryConsolidate, null);
                         if (consolidate.Results.Count > 0)
                         {
-                            consolidate.Results[0].MinutesWorked = consolidate.Results[0].MinutesWorked + Convert.ToInt32((itemCompare.TimeMarker - item.TimeMarker).TotalMinutes);
-                            TableOperation addOperationUpdate = TableOperation.Replace(consolidate.Results[0]);
-                            await consolidatedTable.ExecuteAsync(addOperationUpdate);
-                            contUpdated = contUpdated + 1;
+                            // foreach (ConsolidatedEntity itemConsolidate in consolidate.Results)
+                            // {
+                            // }
+                            int myIndex = consolidate.Results.FindIndex(p => p.DateJob.Day == item.TimeMarker.Day);
+                            if (myIndex > -1)
+                            {
+                                consolidate.Results[0].MinutesWorked = consolidate.Results[0].MinutesWorked + Convert.ToInt32((itemCompare.TimeMarker - item.TimeMarker).TotalMinutes);
+                                TableOperation addOperationUpdate = TableOperation.Replace(consolidate.Results[0]);
+                                await consolidatedTable.ExecuteAsync(addOperationUpdate);
+                                contUpdated = contUpdated + 1;
+                            }
+                            else
+                            {
+                                ConsolidatedEntity consolidatedEntity = new ConsolidatedEntity
+                                {
+                                    ETag = "*",
+                                    PartitionKey = "CONSOLIDATED",
+                                    RowKey = Guid.NewGuid().ToString(),
+                                    EmployeId = item.EmployeId,
+                                    MinutesWorked = Convert.ToInt32((itemCompare.TimeMarker - item.TimeMarker).TotalMinutes),
+                                    DateJob = item.TimeMarker
+                                };
+
+                                TableOperation addOperationInsert = TableOperation.Insert(consolidatedEntity);
+                                await consolidatedTable.ExecuteAsync(addOperationInsert);
+                                contAdded = contAdded + 1;
+                            }
+
                         }
                         else
                         {
@@ -68,6 +92,9 @@ namespace relojes_azure_functions.Functions.Functions
                             await consolidatedTable.ExecuteAsync(addOperationInsert);
                             contAdded = contAdded + 1;
                         }
+                        Console.Write($"hola {(itemCompare.TimeMarker - item.TimeMarker).TotalMinutes}");
+                        Console.Write($"ini {item.TimeMarker}");
+                        Console.Write($"end {itemCompare.TimeMarker}");
                         break;
                     }
                 }
@@ -81,6 +108,38 @@ namespace relojes_azure_functions.Functions.Functions
                 IsSuccess = true,
                 Message = message,
                 Result = times
+            });
+        }
+
+        [FunctionName(nameof(GetConsolidateByDate))]
+        public static async Task<IActionResult> GetConsolidateByDate(
+          [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "consolidated/{date}")] HttpRequest req,
+          [Table("consolidated", Connection = "AzureWebJobsStorage")] CloudTable consolidatedTable,
+          string date,
+          ILogger log)
+        {
+            log.LogInformation($"Get consolidated by date: {date}, received");
+
+            // validate times EmployedId
+            TableQuery<ConsolidatedEntity> queryConsolidate = new TableQuery<ConsolidatedEntity>().Where(TableQuery.GenerateFilterConditionForInt("EmployeId", QueryComparisons.Equal, 1));
+            TableQuerySegment<ConsolidatedEntity> consolidate = await consolidatedTable.ExecuteQuerySegmentedAsync(queryConsolidate, null);
+            if (consolidate.Results.Count <= 0)
+            {
+                return new BadRequestObjectResult(new Response
+                {
+                    IsSuccess = false,
+                    Message = "Consolidated register not found."
+                });
+            }
+
+            string message = $"Consolidated {date}, retrieved";
+            log.LogInformation(message);
+
+            return new OkObjectResult(new Response
+            {
+                IsSuccess = true,
+                Message = message,
+                Result = consolidate
             });
         }
     }
