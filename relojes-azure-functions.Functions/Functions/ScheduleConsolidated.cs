@@ -42,14 +42,11 @@ namespace relojes_azure_functions.Functions.Functions
                         TableQuerySegment<ConsolidatedEntity> consolidate = await consolidatedTable.ExecuteQuerySegmentedAsync(queryConsolidate, null);
                         if (consolidate.Results.Count > 0)
                         {
-                            // foreach (ConsolidatedEntity itemConsolidate in consolidate.Results)
-                            // {
-                            // }
                             int myIndex = consolidate.Results.FindIndex(p => p.DateJob.Day == item.TimeMarker.Day);
                             if (myIndex > -1)
                             {
-                                consolidate.Results[0].MinutesWorked = consolidate.Results[0].MinutesWorked + Convert.ToInt32((itemCompare.TimeMarker - item.TimeMarker).TotalMinutes);
-                                TableOperation addOperationUpdate = TableOperation.Replace(consolidate.Results[0]);
+                                consolidate.Results[myIndex].MinutesWorked = consolidate.Results[myIndex].MinutesWorked + Convert.ToInt32((itemCompare.TimeMarker - item.TimeMarker).TotalMinutes);
+                                TableOperation addOperationUpdate = TableOperation.Replace(consolidate.Results[myIndex]);
                                 await consolidatedTable.ExecuteAsync(addOperationUpdate);
                                 contUpdated = contUpdated + 1;
                             }
@@ -87,9 +84,6 @@ namespace relojes_azure_functions.Functions.Functions
                             await consolidatedTable.ExecuteAsync(addOperationInsert);
                             contAdded = contAdded + 1;
                         }
-                        Console.Write($"hola {(itemCompare.TimeMarker - item.TimeMarker).TotalMinutes}");
-                        Console.Write($"ini {item.TimeMarker}");
-                        Console.Write($"end {itemCompare.TimeMarker}");
                         break;
                     }
                 }

@@ -52,11 +52,9 @@ namespace relojes_azure_functions.Functions.Functions
                             // }
                             
                             int myIndex = consolidate.Results.FindIndex(p => {
-                                Console.Write($" ini:{p.DateJob.Day}");
-                                Console.Write($" ini:{item.TimeMarker.Day}");
-                                return p.DateJob.Day == item.TimeMarker.Day;
+                                return p.DateJob.Date == item.TimeMarker.Date;
                              });
-                            Console.Write($" ini: {myIndex}");
+
                             if (myIndex > -1)
                             {
                                 consolidate.Results[myIndex].MinutesWorked = consolidate.Results[myIndex].MinutesWorked + Convert.ToInt32((itemCompare.TimeMarker - item.TimeMarker).TotalMinutes);
@@ -98,9 +96,6 @@ namespace relojes_azure_functions.Functions.Functions
                             await consolidatedTable.ExecuteAsync(addOperationInsert);
                             contAdded = contAdded + 1;
                         }
-                        Console.Write($"hola {(itemCompare.TimeMarker - item.TimeMarker).TotalMinutes}");
-                        Console.Write($"ini {item.TimeMarker}");
-                        Console.Write($"end {itemCompare.TimeMarker}");
                         break;
                     }
                 }
@@ -136,6 +131,42 @@ namespace relojes_azure_functions.Functions.Functions
                 IsSuccess = true,
                 Message = message,
                 Result = consolidate
+            });
+        }
+
+        [FunctionName(nameof(GetConsolidateByDate))]
+        public static async Task<IActionResult> GetConsolidateByDate(
+          [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "consolidated/{date}")] HttpRequest req,
+          [Table("consolidated", Connection = "AzureWebJobsStorage")] CloudTable consolidatedTable,
+          string date,
+          ILogger log)
+        {
+            log.LogInformation($"Get consolidated by date: {date}, received");
+
+            // validate times EmployedId
+            TableQuery<ConsolidatedEntity> queryConsolidate = new TableQuery<ConsolidatedEntity>();
+            TableQuerySegment<ConsolidatedEntity> consolidate = await consolidatedTable.ExecuteQuerySegmentedAsync(queryConsolidate, null);
+            if (consolidate.Results.Count <= 0)
+            {
+                return new BadRequestObjectResult(new Response
+                {
+                    IsSuccess = false,
+                    Message = "Consolidated register not found."
+                });
+            }
+
+            int myIndex = consolidate.Results.FindIndex(p => {
+                return p.DateJob.Date == Convert.ToDateTime(date).Date;
+            });
+
+            string message = $"Consolidated {date}, retrieved";
+            log.LogInformation(message);
+
+            return new OkObjectResult(new Response
+            {
+                IsSuccess = true,
+                Message = message,
+                Result = consolidate.Results[myIndex]
             });
         }
     }
